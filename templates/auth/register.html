@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}បង្កើត Account — Kairozen SMM{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <h1>បង្កើត Account ថ្មី</h1>
+  <span class="auth-sub">ចាប់ផ្តើម boost service របស់អ្នកក្នុងរយៈពេលប៉ុន្មាននាទី</span>
+
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label" for="username">Username</label>
+      <input class="form-control" type="text" id="username" name="username" value="{{ username or '' }}" required autofocus>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="email">Email</label>
+      <input class="form-control" type="email" id="email" name="email" value="{{ email or '' }}" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="password">Password</label>
+      <input class="form-control" type="password" id="password" name="password" required>
+      <span class="form-hint">យ៉ាងតិច 6 តួអក្សរ</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="confirm_password">បញ្ជាក់ Password</label>
+      <input class="form-control" type="password" id="confirm_password" name="confirm_password" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">បង្កើត Account</button>
+  </form>
+
+  <div class="auth-switch">
+    មាន account រួចហើយ? <a href="{{ url_for('auth.login') }}">Login</a>
+  </div>
+</div>
+{% endblock %}

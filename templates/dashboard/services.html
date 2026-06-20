@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Services — Kairozen SMM{% endblock %}
+{% block content %}
+
+<div class="section-head" style="margin-top:32px;">
+  <h2>Service ទាំងអស់</h2>
+  <span class="section-tag">{{ services|length }} SERVICES</span>
+</div>
+
+<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;">
+  <a href="{{ url_for('dashboard.services') }}" class="btn btn-sm" style="{{ 'background:var(--ink); color:var(--text-on-ink); border:1px solid var(--ink);' if not selected_category else 'background:#fff; color:var(--text-on-cream); border:1px solid var(--cream-dim);' }}">ទាំងអស់</a>
+  {% for cat in categories %}
+  <a href="{{ url_for('dashboard.services', category=cat) }}"
+     class="btn btn-sm"
+     style="{{ 'background:var(--ink); color:var(--text-on-ink); border:1px solid var(--ink);' if cat == selected_category else 'background:#fff; color:var(--text-on-cream); border:1px solid var(--cream-dim);' }}">
+    {{ cat }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if services %}
+<div class="grid-4">
+  {% for s in services %}
+  <a href="{{ url_for('dashboard.new_order', service=s.id) }}" class="service-card card-flat" style="display:flex; text-decoration:none;">
+    <span class="service-category-tag">{{ s.category }}</span>
+    <span class="service-name">{{ s.name }}</span>
+    <div class="service-meta">
+      <span>Min {{ s.min_order }}</span>
+      <span>Max {{ s.max_order }}</span>
+    </div>
+    <div class="service-rate">${{ "%.4f"|format(s.rate) }} / 1000</div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state card-flat">
+  <h3>មិនទាន់មាន Service ទេ</h3>
+  <p>សូមរង់ចាំ admin បន្ថែម service</p>
+</div>
+{% endif %}
+
+{% endblock %}

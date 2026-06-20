@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Kairozen SMM Panel — Social Media Boost សម្រាប់កម្ពុជា{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <span class="hero-eyebrow">SMM PANEL · KHQR PAYMENT · API READY</span>
+  <h1>បង្កើនការលក់ <span class="accent">Social Media</span> ដោយមិនចាំបាច់ស្មុគស្មាញ</h1>
+  <p class="hero-sub">
+    Followers, Likes, Views, Comments — order រហ័ស ថ្លៃសម្រាប់ reseller ទូទាត់តាម KHQR/Bakong
+    ភ្លាមៗ។ មាន API សម្រាប់ភ្ជាប់ចូល bot ផ្ទាល់ខ្លួនរបស់អ្នកផងដែរ។
+  </p>
+  <div class="hero-actions">
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('dashboard.services') }}" class="btn btn-primary">មើល Service ទាំងអស់</a>
+    {% else %}
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary">ចាប់ផ្តើមឥឡូវ</a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-ghost">Login</a>
+    {% endif %}
+  </div>
+
+  <svg class="hero-graph" viewBox="0 0 480 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path class="line-glow" d="M10 190 L80 165 L140 175 L200 110 L260 130 L330 60 L400 75 L460 25" />
+    <path class="line-path" d="M10 190 L80 165 L140 175 L200 110 L260 130 L330 60 L400 75 L460 25" />
+    <circle class="dot-end" cx="460" cy="25" r="6" fill="#9EFF6B" />
+  </svg>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>របៀបដំណើរការ</h2>
+    <span class="section-tag">3 STEPS</span>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="stat-label">01 — TOP UP</div>
+      <p style="margin-top:10px; font-size:14.5px;">ស្កេន KHQR ដើម្បីបញ្ចូលលុយចូល balance ភ្លាមៗ តាមរយៈ Bakong app ណាមួយ</p>
+    </div>
+    <div class="card">
+      <div class="stat-label">02 — ជ្រើស SERVICE</div>
+      <p style="margin-top:10px; font-size:14.5px;">ជ្រើស platform និង service ដែលអ្នកចង់បាន បញ្ចូល link និងចំនួន</p>
+    </div>
+    <div class="card">
+      <div class="stat-label">03 — តាមដាន ORDER</div>
+      <p style="margin-top:10px; font-size:14.5px;">តាមដាន progress real-time រហូតដល់ order បានបញ្ចប់ពេញលេញ</p>
+    </div>
+  </div>
+</section>
+
+{% if featured %}
+<section class="section">
+  <div class="section-head">
+    <h2>Service ពេញនិយម</h2>
+    <span class="section-tag">FEATURED</span>
+  </div>
+  <div class="grid-4">
+    {% for s in featured %}
+    <div class="service-card card-flat">
+      <span class="service-category-tag">{{ s.category }}</span>
+      <span class="service-name">{{ s.name }}</span>
+      <div class="service-meta">
+        <span>Min {{ s.min_order }} - Max {{ s.max_order }}</span>
+      </div>
+      <div class="service-rate">${{ "%.4f"|format(s.rate) }} / 1000</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

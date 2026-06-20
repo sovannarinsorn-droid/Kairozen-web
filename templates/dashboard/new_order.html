@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}ដាក់ Order ថ្មី — Kairozen SMM{% endblock %}
+{% block content %}
+
+<div class="section-head" style="margin-top:32px;">
+  <h2>ដាក់ Order ថ្មី</h2>
+  <span class="section-tag">NEW ORDER</span>
+</div>
+
+<div class="card" style="max-width:560px;">
+  <form method="POST" id="orderForm">
+    <div class="form-group">
+      <label class="form-label" for="service_id">Service</label>
+      <select class="form-control" id="service_id" name="service_id" required onchange="updateServiceInfo()">
+        <option value="">— ជ្រើស service —</option>
+        {% for s in services %}
+        <option value="{{ s.id }}"
+                data-rate="{{ s.rate }}"
+                data-min="{{ s.min_order }}"
+                data-max="{{ s.max_order }}"
+                {{ 'selected' if preselect == s.id else '' }}>
+          [{{ s.category }}] {{ s.name }} — ${{ "%.4f"|format(s.rate) }}/1000
+        </option>
+        {% endfor %}
+      </select>
+      <span class="form-hint" id="serviceRange">ជ្រើស service ដើម្បីមើល min/max</span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="link">Link</label>
+      <input class="form-control" type="text" id="link" name="link" placeholder="https://..." required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="quantity">Quantity</label>
+      <input class="form-control" type="number" id="quantity" name="quantity" placeholder="1000" required oninput="updateServiceInfo()">
+    </div>
+
+    <div class="card-flat" style="padding:16px; background:var(--cream); border:none; margin-bottom:18px;">
+      <div class="flex-between">
+        <span class="muted small">តម្លៃប៉ាន់ស្មាន</span>
+        <span class="mono" style="font-weight:700; font-size:18px;" id="estimatedCharge">$0.00</span>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block">បញ្ជូន Order</button>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updateServiceInfo() {
+  const select = document.getElementById('service_id');
+  const option = select.options[select.selectedIndex];
+  const qtyInput = document.getElementById('quantity');
+  const rangeEl = document.getElementById('serviceRange');
+  const chargeEl = document.getElementById('estimatedCharge');
+
+  if (!option || !option.value) {
+    rangeEl.textContent = "ជ្រើស service ដើម្បីមើល min/max";
+    chargeEl.textContent = "$0.00";
+    return;
+  }
+
+  const rate = parseFloat(option.dataset.rate);
+  const min = parseInt(option.dataset.min);
+  const max = parseInt(option.dataset.max);
+  rangeEl.textContent = `Min ${min} — Max ${max}`;
+
+  const qty = parseInt(qtyInput.value) || 0;
+  const charge = (rate * qty) / 1000;
+  chargeEl.textContent = "$" + charge.toFixed(2);
+}
+document.addEventListener("DOMContentLoaded", updateServiceInfo);
+</script>
+{% endblock %}

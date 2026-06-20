@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}KHQR Payment — Kairozen SMM{% endblock %}
+{% block content %}
+
+<div class="section-head" style="margin-top:32px;">
+  <h2>ស្កេនដើម្បីទូទាត់</h2>
+  <span class="section-tag">BAKONG KHQR</span>
+</div>
+
+<div class="qr-shell">
+  <div class="qr-canvas-wrap">
+    <canvas id="qrCanvas"></canvas>
+  </div>
+  <div class="qr-amount">${{ "%.2f"|format(deposit.amount) }}</div>
+  <div class="muted small mono">{{ deposit.bill_number }}</div>
+
+  <div style="margin-top:18px;">
+    <span class="qr-status {{ 'is-paid' if deposit.status == 'paid' else '' }}" id="depositStatus">
+      {% if deposit.status == 'paid' %}✓ ទូទាត់ជោគជ័យ{% else %}កំពុងរង់ចាំការទូទាត់...{% endif %}
+    </span>
+  </div>
+
+  <a href="{{ url_for('dashboard.deposit') }}" class="btn btn-outline btn-sm" style="margin-top:24px;">← ត្រឡប់</a>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+  new QRious({
+    element: document.getElementById('qrCanvas'),
+    value: {{ deposit.qr_payload|tojson }},
+    size: 260,
+    level: 'M'
+  });
+
+  {% if deposit.status != 'paid' %}
+  startDepositPolling({{ deposit.id }});
+  {% endif %}
+</script>
+{% endblock %}

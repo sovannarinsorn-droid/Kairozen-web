@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Deposits — Admin{% endblock %}
+{% block content %}
+
+<div class="section-head" style="margin-top:32px;">
+  <h2>Deposits</h2>
+  <span class="section-tag">KHQR TOP-UPS</span>
+</div>
+
+<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+  {% for st in ['pending', 'paid', 'expired', 'failed', ''] %}
+  <a href="{{ url_for('admin.deposits', status=st) }}" class="btn btn-sm"
+     style="{{ 'background:var(--ink); color:var(--text-on-ink); border:1px solid var(--ink);' if st == status_filter else 'background:#fff; color:var(--text-on-cream); border:1px solid var(--cream-dim);' }}">
+    {{ st if st else 'ទាំងអស់' }}
+  </a>
+  {% endfor %}
+</div>
+
+<p class="muted small" style="margin-bottom:16px;">
+  ប្រសិនបើ Bakong API check បរាជ័យ (token unauthorized) admin អាច confirm ដោយដៃបន្ទាប់ពីផ្ទៀងផ្ទាត់ការទូទាត់ផ្ទាល់។
+</p>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th>ID</th><th>User</th><th>Amount</th><th>Bill No.</th><th>Status</th><th>Date</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for d in deposits %}
+      <tr>
+        <td class="mono">{{ d.id }}</td>
+        <td>{{ d.user.username }}</td>
+        <td class="mono">${{ "%.2f"|format(d.amount) }}</td>
+        <td class="mono small">{{ d.bill_number }}</td>
+        <td><span class="badge badge-{{ d.status }}">{{ d.status }}</span></td>
+        <td class="small muted">{{ d.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>
+          {% if d.status == 'pending' %}
+          <form method="POST" action="{{ url_for('admin.confirm_deposit', deposit_id=d.id) }}" onsubmit="return confirm('Confirm deposit នេះ ហើយបន្ថែម balance ${{ '%.2f'|format(d.amount) }} ទៅ {{ d.user.username }}?')">
+            <button type="submit" class="btn btn-sm btn-lime">Confirm ដោយដៃ</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

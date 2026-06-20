@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Order History — Kairozen SMM{% endblock %}
+{% block content %}
+
+<div class="section-head" style="margin-top:32px;">
+  <h2>Order History</h2>
+  <a href="{{ url_for('dashboard.new_order') }}" class="btn btn-primary btn-sm">+ Order ថ្មី</a>
+</div>
+
+{% if orders %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Ref</th><th>Service</th><th>Link</th><th>Qty</th><th>Remains</th><th>Charge</th><th>Status</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td class="mono">{{ o.order_ref }}</td>
+        <td>{{ o.service.name }}</td>
+        <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ o.link }}">{{ o.link }}</td>
+        <td>{{ o.quantity }}</td>
+        <td id="remains-{{ o.id }}">{{ o.remains if o.remains is not none else '-' }}</td>
+        <td class="mono">${{ "%.2f"|format(o.charge) }}</td>
+        <td><span class="badge badge-{{ o.status }}" id="status-{{ o.id }}">{{ o.status }}</span></td>
+        <td>
+          {% if o.provider_order_id %}
+          <button class="btn btn-sm btn-outline" onclick="refreshOrderStatus({{ o.id }}, this)">Refresh</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% if pagination.has_prev %}<a href="{{ url_for('dashboard.order_history', page=pagination.prev_num) }}">← Prev</a>{% endif %}
+  {% for p in range(1, pagination.pages + 1) %}
+    <a href="{{ url_for('dashboard.order_history', page=p) }}" class="{{ 'active' if p == pagination.page else '' }}">{{ p }}</a>
+  {% endfor %}
+  {% if pagination.has_next %}<a href="{{ url_for('dashboard.order_history', page=pagination.next_num) }}">Next →</a>{% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state card-flat">
+  <h3>មិនទាន់មាន Order ទេ</h3>
+  <p>ចាប់ផ្តើមដាក់ order ដំបូងរបស់អ្នកឥឡូវនេះ</p>
+  <a href="{{ url_for('dashboard.new_order') }}" class="btn btn-primary" style="margin-top:16px;">ដាក់ Order</a>
+</div>
+{% endif %}
+
+{% endblock %}

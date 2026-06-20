@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}API — Kairozen SMM{% endblock %}
+{% block content %}
+
+<div class="section-head" style="margin-top:32px;">
+  <h2>API សម្រាប់ Bot របស់អ្នក</h2>
+  <span class="section-tag">DEVELOPER</span>
+</div>
+
+<div class="key-box">
+  {% if current_user.api_key %}
+  <div class="endpoint-label">YOUR API KEY</div>
+  <div class="key-row">
+    <span class="key-value" id="apiKeyValue">{{ current_user.api_key }}</span>
+    <button class="btn btn-sm btn-ghost" onclick="copyToClipboard('{{ current_user.api_key }}', this)">ចម្លង</button>
+  </div>
+
+  <div class="endpoint-row">
+    <div class="endpoint-label">API ENDPOINT</div>
+    <div class="key-value">{{ app_base_url }}/api/v2</div>
+  </div>
+
+  <form method="POST" style="margin-top:18px;">
+    <input type="hidden" name="action" value="regenerate">
+    <button type="submit" class="btn btn-sm btn-danger-outline" onclick="return confirm('Key ចាស់នឹងប្រើលែងបាន។ បន្តទេ?')">បង្កើត Key ថ្មី</button>
+  </form>
+  {% else %}
+  <p style="margin-bottom:16px; color:var(--text-on-ink-dim);">អ្នកមិនទាន់មាន API Key ទេ។ បង្កើតមួយដើម្បីភ្ជាប់ panel នេះទៅ Telegram bot ឬប្រព័ន្ធផ្សេងរបស់អ្នក។</p>
+  <form method="POST">
+    <input type="hidden" name="action" value="generate">
+    <button type="submit" class="btn btn-lime">បង្កើត API Key</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if current_user.api_key %}
+<div class="section">
+  <div class="section-head">
+    <h2>របៀបប្រើ</h2>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="service-name">មើល Service ទាំងអស់</div>
+      <div class="code-block" style="margin-top:12px;">
+<span class="c-comment"># POST</span> {{ app_base_url }}/api/v2
+key={{ current_user.api_key }}
+<span class="c-key">action</span>=<span class="c-string">services</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="service-name">ដាក់ Order</div>
+      <div class="code-block" style="margin-top:12px;">
+<span class="c-comment"># POST</span> {{ app_base_url }}/api/v2
+key={{ current_user.api_key }}
+<span class="c-key">action</span>=<span class="c-string">add</span>
+<span class="c-key">service</span>=<span class="c-string">1</span>
+<span class="c-key">link</span>=<span class="c-string">https://...</span>
+<span class="c-key">quantity</span>=<span class="c-string">1000</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="service-name">ពិនិត្យ Status</div>
+      <div class="code-block" style="margin-top:12px;">
+<span class="c-comment"># POST</span> {{ app_base_url }}/api/v2
+key={{ current_user.api_key }}
+<span class="c-key">action</span>=<span class="c-string">status</span>
+<span class="c-key">order</span>=<span class="c-string">123</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="service-name">ពិនិត្យ Balance</div>
+      <div class="code-block" style="margin-top:12px;">
+<span class="c-comment"># POST</span> {{ app_base_url }}/api/v2
+key={{ current_user.api_key }}
+<span class="c-key">action</span>=<span class="c-string">balance</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="muted small" style="margin-top:18px;">
+    Format នេះត្រូវគ្នានឹង SMM Panel API v2 ស្តង់ដារ ដូច្នេះ script ឬ bot ណាមួយ
+    ដែលគាំទ្រ provider format ស្តង់ដារ អាចភ្ជាប់ចូលផ្ទាល់បាន។
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

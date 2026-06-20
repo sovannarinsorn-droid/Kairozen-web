@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Top Up — Kairozen SMM{% endblock %}
+{% block content %}
+
+<div class="section-head" style="margin-top:32px;">
+  <h2>Top Up Balance</h2>
+  <span class="section-tag">KHQR / BAKONG</span>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label class="form-label" for="amount">ចំនួនទឹកប្រាក់ (USD)</label>
+        <input class="form-control" type="number" step="0.01" min="1" id="amount" name="amount" placeholder="10.00" required autofocus>
+        <span class="form-hint">អប្បបរមា $1.00</span>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">បង្កើត KHQR Code</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px; margin-bottom:14px;">Deposit ថ្មីៗ</h3>
+    {% if recent_deposits %}
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      {% for d in recent_deposits %}
+      <div class="flex-between" style="font-size:13.5px; padding-bottom:10px; border-bottom:1px solid var(--cream-dim);">
+        <span class="mono">${{ "%.2f"|format(d.amount) }}</span>
+        <span class="badge badge-{{ d.status }}">{{ d.status }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted small">មិនទាន់មាន deposit ទេ</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

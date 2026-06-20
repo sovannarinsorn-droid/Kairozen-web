@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Login — Kairozen SMM{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <h1>សូមស្វាគមន៍ត្រឡប់មកវិញ</h1>
+  <span class="auth-sub">Login ដើម្បីបន្តគ្រប់គ្រង order របស់អ្នក</span>
+
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label" for="identifier">Username ឬ Email</label>
+      <input class="form-control" type="text" id="identifier" name="identifier" value="{{ identifier or '' }}" required autofocus>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="password">Password</label>
+      <input class="form-control" type="password" id="password" name="password" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Login</button>
+  </form>
+
+  <div class="auth-switch">
+    មិនទាន់មាន account? <a href="{{ url_for('auth.register') }}">បង្កើតថ្មី</a>
+  </div>
+</div>
+{% endblock %}

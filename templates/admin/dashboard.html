@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — Kairozen SMM{% endblock %}
+{% block content %}
+
+<div class="section-head" style="margin-top:32px;">
+  <h2>Admin Dashboard</h2>
+  <span class="section-tag">OVERVIEW</span>
+</div>
+
+<div class="grid-4">
+  <div class="card stat-card">
+    <div class="stat-label">Users</div>
+    <div class="stat-value">{{ stats.total_users }}</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-label">Order សរុប</div>
+    <div class="stat-value">{{ stats.total_orders }}</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-label">Pending Orders</div>
+    <div class="stat-value accent-coral">{{ stats.pending_orders }}</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-label">Pending Deposits</div>
+    <div class="stat-value accent-coral">{{ stats.pending_deposits }}</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-label">Active Services</div>
+    <div class="stat-value">{{ stats.total_services }}</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-label">Revenue (paid deposits)</div>
+    <div class="stat-value accent-lime">${{ "%.2f"|format(stats.total_revenue) }}</div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:8px;">
+  <div class="grid-4">
+    <a href="{{ url_for('admin.users') }}" class="card" style="display:block;"><div class="service-name">👥 Users</div></a>
+    <a href="{{ url_for('admin.services') }}" class="card" style="display:block;"><div class="service-name">⚙️ Services</div></a>
+    <a href="{{ url_for('admin.orders') }}" class="card" style="display:block;"><div class="service-name">📦 Orders</div></a>
+    <a href="{{ url_for('admin.deposits') }}" class="card" style="display:block;"><div class="service-name">💳 Deposits</div></a>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head"><h2>Order ថ្មីៗ</h2></div>
+  {% if recent_orders %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Ref</th><th>User</th><th>Service</th><th>Qty</th><th>Charge</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for o in recent_orders %}
+        <tr>
+          <td class="mono">{{ o.order_ref }}</td>
+          <td>{{ o.user.username }}</td>
+          <td>{{ o.service.name }}</td>
+          <td>{{ o.quantity }}</td>
+          <td class="mono">${{ "%.2f"|format(o.charge) }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">មិនទាន់មាន order ទេ</p>
+  {% endif %}
+</div>
+
+{% endblock %}

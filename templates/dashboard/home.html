@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Kairozen SMM{% endblock %}
+{% block content %}
+
+<div class="section" style="margin-top:32px;">
+  <div class="section-head">
+    <h2>សួស្តី, {{ current_user.username }} 👋</h2>
+    <span class="section-tag">DASHBOARD</span>
+  </div>
+
+  <div class="grid-3">
+    <div class="card stat-card">
+      <div class="stat-label">Balance</div>
+      <div class="stat-value accent-lime">${{ "%.2f"|format(current_user.balance) }}</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-label">Order សរុប</div>
+      <div class="stat-value">{{ current_user.orders.count() }}</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-label">API Key</div>
+      <div class="stat-value" style="font-size:16px;">
+        {% if current_user.api_key %}<span style="color:#2D5B16;">✓ Active</span>{% else %}<span class="muted">មិនទាន់បង្កើត</span>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="grid-3">
+    <a href="{{ url_for('dashboard.new_order') }}" class="card" style="display:block;">
+      <div class="service-name">📦 ដាក់ Order ថ្មី</div>
+      <p class="muted small" style="margin-top:6px;">ជ្រើស service ហើយដាក់ order ភ្លាមៗ</p>
+    </a>
+    <a href="{{ url_for('dashboard.deposit') }}" class="card" style="display:block;">
+      <div class="service-name">💳 Top Up Balance</div>
+      <p class="muted small" style="margin-top:6px;">ស្កេន KHQR ដើម្បីបញ្ចូលលុយ</p>
+    </a>
+    <a href="{{ url_for('dashboard.api_key') }}" class="card" style="display:block;">
+      <div class="service-name">🔑 API សម្រាប់ Bot</div>
+      <p class="muted small" style="margin-top:6px;">ភ្ជាប់ panel នេះទៅ bot ផ្ទាល់ខ្លួន</p>
+    </a>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head">
+    <h2>Order ថ្មីៗ</h2>
+    <a href="{{ url_for('dashboard.order_history') }}" class="nav-link" style="color:var(--coral-dim); font-weight:600;">មើលទាំងអស់ →</a>
+  </div>
+
+  {% if recent_orders %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Ref</th><th>Service</th><th>Qty</th><th>Charge</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for o in recent_orders %}
+        <tr>
+          <td class="mono">{{ o.order_ref }}</td>
+          <td>{{ o.service.name }}</td>
+          <td>{{ o.quantity }}</td>
+          <td class="mono">${{ "%.2f"|format(o.charge) }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state card-flat">
+    <h3>មិនទាន់មាន Order ទេ</h3>
+    <p>ចាប់ផ្តើមដាក់ order ដំបូងរបស់អ្នកឥឡូវនេះ</p>
+    <a href="{{ url_for('dashboard.new_order') }}" class="btn btn-primary" style="margin-top:16px;">ដាក់ Order</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
