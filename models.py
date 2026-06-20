@@ -139,11 +139,12 @@ class Deposit(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     amount = db.Column(db.Numeric(12, 2), nullable=False)
-    md5_hash = db.Column(db.String(64), nullable=True, index=True)  # bakong txn lookup hash
+    reference = db.Column(db.String(64), unique=True, nullable=False, index=True)  # CamRapidPay reference
     bill_number = db.Column(db.String(64), unique=True, nullable=False, index=True)
 
     status = db.Column(db.String(20), nullable=False, default="pending")  # pending, paid, expired, failed
-    qr_payload = db.Column(db.Text, nullable=True)
+    qr_code = db.Column(db.Text, nullable=True)        # raw KHQR EMV string from CamRapidPay
+    payment_url = db.Column(db.String(500), nullable=True)  # optional hosted payment link
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     paid_at = db.Column(db.DateTime, nullable=True)

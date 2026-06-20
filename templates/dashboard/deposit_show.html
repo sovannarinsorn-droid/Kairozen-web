@@ -30,7 +30,7 @@
 <script>
   new QRious({
     element: document.getElementById('qrCanvas'),
-    value: {{ deposit.qr_payload|tojson }},
+    value: {{ deposit.qr_code|tojson }},
     size: 260,
     level: 'M'
   });

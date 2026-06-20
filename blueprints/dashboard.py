@@ -7,7 +7,7 @@ from extensions import db
 from models import Service, Order, Deposit, gen_order_ref
 from services import provider, pricing
 from services.provider import ProviderError
-from services.khqr import build_khqr_payload, payload_md5, check_payment_by_md5, BakongCheckError
+from services.khqr import create_payment, check_payment, CamRapidError
 
 bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
@@ -179,15 +179,20 @@ def deposit():
             return redirect(url_for("dashboard.deposit"))
 
         bill_number = f"KZ{current_user.id}{int(amount*100)}{Order.query.count()}"
-        payload = build_khqr_payload(float(amount), bill_number)
-        md5_hash = payload_md5(payload)
+
+        try:
+            result = create_payment(float(amount), bill_number)
+        except CamRapidError as e:
+            flash(f"មិនអាចបង្កើត QR បានទេ: {e}", "danger")
+            return redirect(url_for("dashboard.deposit"))
 
         dep = Deposit(
             user_id=current_user.id,
             amount=amount,
-            md5_hash=md5_hash,
+            reference=bill_number,
             bill_number=bill_number,
-            qr_payload=payload,
+            qr_code=result.get("qr_code"),
+            payment_url=result.get("payment_url"),
             status="pending",
         )
         db.session.add(dep)
@@ -220,11 +225,11 @@ def deposit_check(deposit_id):
         return jsonify({"ok": True, "status": "paid"})
 
     try:
-        result = check_payment_by_md5(dep.md5_hash)
-    except BakongCheckError as e:
+        paid = check_payment(dep.reference)
+    except CamRapidError as e:
         return jsonify({"ok": False, "manual_required": True, "error": str(e)}), 200
 
-    if result["paid"]:
+    if paid:
         dep.status = "paid"
         from datetime import datetime
         dep.paid_at = datetime.utcnow()

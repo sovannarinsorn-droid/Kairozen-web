@@ -60,11 +60,11 @@ SQLite ប្រើជា fallback ស្វ័យប្រវត្តិបើ
 | Variable | ន័យ |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `PROVIDER_API_URL` / `PROVIDER_API_KEY` | khmer-smm.com API (ត្រូវដាក់ key ផ្ទាល់ខ្លួន) |
+| `PROVIDER_API_URL` / `PROVIDER_API_KEY` | khmer-smm.com (ឬ provider ផ្សេង) — ត្រូវដាក់ key ផ្ទាល់ខ្លួន |
 | `DEFAULT_MARKUP_PERCENT` | % បន្ថែមលើ provider rate (admin អាច override ក្នុង UI ក៏បាន) |
-| `BAKONG_ACCOUNT_ID` | គណនី Bakong ទទួលលុយ (Tag 30 — individual account) |
-| `BAKONG_API_TOKEN` | Official Bakong API token (សម្រាប់ auto-check payment; បើ unauthorized admin confirm ដោយដៃនៅ `/admin/deposits`) |
-| `APP_BASE_URL` | domain ពិតប្រាកដ (បង្ហាញក្នុង API docs page) |
+| `CAMRAPID_API_KEY` | API key ពី CamRapidPay dashboard |
+| `CAMRAPID_CREATE_URL` / `CAMRAPID_CHECK_URL` | CamRapidPay endpoints (default ត្រឹមត្រូវរួចស្រេច) |
+| `APP_BASE_URL` | domain ពិតប្រាកដ (ប្រើជា webhook URL base ផងដែរ) |
 | `ADMIN_USERNAME/EMAIL/PASSWORD` | admin bootstrap (តែម្តងគត់ តាមរយៈ `flask create-admin`) |
 
 ## សំខាន់ៗត្រូវដឹង
@@ -72,7 +72,7 @@ SQLite ប្រើជា fallback ស្វ័យប្រវត្តិបើ
 1. **Admin URL**: `/admin` (តម្រូវ login ដោយ account ដែលមាន `is_admin=True`)។
 2. **Service sync**: Admin → Services → "Sync ពី khmer-smm.com" — service ថ្មីៗនឹង **inactive ដោយដែលក**, admin ត្រូវកំណត់ markup ហើយ tick Active ដើម្បីបង្ហាញលើ user។
 3. **Public API** (`/api/v2`): User generate API key ផ្ទាល់ខ្លួននៅ Dashboard → API Key។ Format ដូច khmer-smm.com (`action=services/add/status/balance`) — ដូច្នេះ bot ឬ script ដែលគាំទ្រ provider format ស្តង់ដារ អាចភ្ជាប់ចូលផ្ទាល់។
-4. **KHQR Payment check**: បើ `BAKONG_API_TOKEN` invalid/unauthorized (ដែលធ្លាប់ជួបពីមុន) ប្រព័ន្ធនឹង fail soft ហើយ deposit status នៅ pending — admin confirm ដោយដៃនៅ `/admin/deposits`។
+4. **KHQR Payment check**: ប្រើ CamRapidPay (`pay.camrapidpay.com`) — ដូចគ្នានឹង integration ដែលប្រើក្នុង Telegram bot។ បើ `CAMRAPID_API_KEY` invalid ឬ CamRapidPay down ប្រព័ន្ធនឹង fail soft ហើយ deposit status នៅ pending — admin confirm ដោយដៃនៅ `/admin/deposits`។
 5. **Balance flow**: កាត់ balance មុនបញ្ជូន order ទៅ provider; បើ provider បរាជ័យ refund ស្វ័យប្រវត្តិ។
 
 ## មិនទាន់បានធ្វើ (Next Steps ផ្ដល់យោបល់)

@@ -26,12 +26,14 @@ class Config:
     # --- Pricing ---
     DEFAULT_MARKUP_PERCENT = float(os.environ.get("DEFAULT_MARKUP_PERCENT", "30"))
 
-    # --- Bakong KHQR ---
-    BAKONG_ACCOUNT_ID = os.environ.get("BAKONG_ACCOUNT_ID", "")
-    BAKONG_MERCHANT_NAME = os.environ.get("BAKONG_MERCHANT_NAME", "Kairozen Store")
-    BAKONG_MERCHANT_CITY = os.environ.get("BAKONG_MERCHANT_CITY", "Phnom Penh")
-    BAKONG_API_TOKEN = os.environ.get("BAKONG_API_TOKEN", "")
-    BAKONG_API_URL = os.environ.get("BAKONG_API_URL", "https://api-bakong.nbc.gov.kh/v1")
+    # --- CamRapidPay (KHQR) ---
+    CAMRAPID_API_KEY = os.environ.get("CAMRAPID_API_KEY", "")
+    CAMRAPID_CREATE_URL = os.environ.get(
+        "CAMRAPID_CREATE_URL", "https://pay.camrapidpay.com/api/v1/khqr/create-payments"
+    )
+    CAMRAPID_CHECK_URL = os.environ.get(
+        "CAMRAPID_CHECK_URL", "https://pay.camrapidpay.com/check-transaction-api"
+    )
 
     # --- Admin bootstrap ---
     ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
