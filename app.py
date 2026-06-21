@@ -44,8 +44,22 @@ def create_app(config_class=Config):
         # Lightweight auto-migration: ensure services.provider_service_id has
         # a UNIQUE constraint, required by the bulk upsert in admin sync.
         # Safe to run every startup — no-op if the constraint already exists.
+        #
+        # IMPORTANT: earlier crashed/partial syncs (before this fix existed)
+        # may have left duplicate provider_service_id rows in the table from
+        # when there was no uniqueness guarantee. Adding a UNIQUE constraint
+        # directly would fail in that case, so we deduplicate first (keep
+        # the newest row per provider_service_id, delete the rest).
         try:
             from sqlalchemy import text
+
+            db.session.execute(text("""
+                DELETE FROM services a USING services b
+                WHERE a.provider_service_id = b.provider_service_id
+                AND a.id < b.id
+            """))
+            db.session.commit()
+
             db.session.execute(text(
                 "ALTER TABLE services ADD CONSTRAINT services_provider_service_id_key "
                 "UNIQUE (provider_service_id)"

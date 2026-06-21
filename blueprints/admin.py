@@ -132,6 +132,7 @@ def sync_services():
         if not rows:
             return
         from sqlalchemy.dialects.postgresql import insert as pg_insert
+        from sqlalchemy.exc import SQLAlchemyError
         stmt = pg_insert(Service.__table__).values(rows)
         stmt = stmt.on_conflict_do_update(
             index_elements=["provider_service_id"],
@@ -146,51 +147,62 @@ def sync_services():
                 "updated_at": stmt.excluded.updated_at,
             },
         )
-        db.session.execute(stmt)
-        db.session.commit()
+        try:
+            db.session.execute(stmt)
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            raise
 
     from datetime import datetime
+    from sqlalchemy.exc import SQLAlchemyError
 
-    for ps in provider_services:
-        if not isinstance(ps, dict) or "service" not in ps:
-            skipped += 1
-            continue
+    try:
+        for ps in provider_services:
+            if not isinstance(ps, dict) or "service" not in ps:
+                skipped += 1
+                continue
 
-        pid = str(ps.get("service"))
-        try:
-            provider_rate = Decimal(str(ps.get("rate", "0")))
-            min_order = int(ps.get("min", 100))
-            max_order = int(ps.get("max", 10000))
-        except Exception:
-            skipped += 1
-            continue
+            pid = str(ps.get("service"))
+            try:
+                provider_rate = Decimal(str(ps.get("rate", "0")))
+                min_order = int(ps.get("min", 100))
+                max_order = int(ps.get("max", 10000))
+            except Exception:
+                skipped += 1
+                continue
 
-        markup = existing_markups.get(pid)
-        rate = pricing.calc_rate(provider_rate, markup)
+            markup = existing_markups.get(pid)
+            rate = pricing.calc_rate(provider_rate, markup)
 
-        if pid in existing_ids:
-            updated += 1
-        else:
-            created += 1
+            if pid in existing_ids:
+                updated += 1
+            else:
+                created += 1
 
-        batch.append({
-            "provider_service_id": pid,
-            "name": str(ps.get("name", "Unnamed"))[:255],
-            "category": str(ps.get("category", "Other"))[:120],
-            "provider_rate": provider_rate,
-            "rate": rate,
-            "min_order": min_order,
-            "max_order": max_order,
-            "service_type": str(ps.get("type", "Default"))[:64],
-            "is_active": existing_active.get(pid, False),  # keep prior active state; new services start inactive
-            "updated_at": datetime.utcnow(),
-        })
+            batch.append({
+                "provider_service_id": pid,
+                "name": str(ps.get("name", "Unnamed"))[:255],
+                "category": str(ps.get("category", "Other"))[:120],
+                "provider_rate": provider_rate,
+                "rate": rate,
+                "min_order": min_order,
+                "max_order": max_order,
+                "service_type": str(ps.get("type", "Default"))[:64],
+                "is_active": existing_active.get(pid, False),  # keep prior active state; new services start inactive
+                "updated_at": datetime.utcnow(),
+            })
 
-        if len(batch) >= CHUNK_SIZE:
-            flush_batch(batch)
-            batch = []
+            if len(batch) >= CHUNK_SIZE:
+                flush_batch(batch)
+                batch = []
 
-    flush_batch(batch)  # flush remainder
+        flush_batch(batch)  # flush remainder
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash(f"Sync បរាជ័យ ពេលរក្សាទុក database: {type(e).__name__}", "danger")
+        return redirect(url_for("admin.services"))
 
     _log("sync_services", f"created={created} updated={updated} skipped={skipped}")
     db.session.commit()
