@@ -68,7 +68,7 @@ class Service(db.Model):
     __tablename__ = "services"
 
     id = db.Column(db.Integer, primary_key=True)
-    provider_service_id = db.Column(db.String(32), nullable=False, index=True)
+    provider_service_id = db.Column(db.String(32), unique=True, nullable=False, index=True)
 
     name = db.Column(db.String(255), nullable=False)
     category = db.Column(db.String(120), nullable=False, default="Other")

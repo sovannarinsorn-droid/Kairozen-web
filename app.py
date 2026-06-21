@@ -37,9 +37,22 @@ def create_app(config_class=Config):
 
     # Auto-create tables + bootstrap admin on startup.
     # Needed because Render's free tier has no Shell access to run
-    # `flask init-db` / `flask create-admin` manually.
+    # `flask init-db` / `flask create-admin` / migrations manually.
     with app.app_context():
         db.create_all()
+
+        # Lightweight auto-migration: ensure services.provider_service_id has
+        # a UNIQUE constraint, required by the bulk upsert in admin sync.
+        # Safe to run every startup — no-op if the constraint already exists.
+        try:
+            from sqlalchemy import text
+            db.session.execute(text(
+                "ALTER TABLE services ADD CONSTRAINT services_provider_service_id_key "
+                "UNIQUE (provider_service_id)"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()  # constraint already exists or table is fresh (create_all handled it)
 
         admin_username = app.config["ADMIN_USERNAME"]
         if not User.query.filter_by(username=admin_username).first():

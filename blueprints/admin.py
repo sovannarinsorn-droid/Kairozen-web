@@ -106,60 +106,91 @@ def sync_services():
         flash(f"Sync បរាជ័យ: {e}", "danger")
         return redirect(url_for("admin.services"))
 
-    # Safety guard: a misconfigured PROVIDER_API_URL (e.g. still pointing at
-    # a placeholder domain) can return non-SMM-API JSON that technically
-    # parses as a list/dict but isn't real service data. Validate shape
-    # strictly and cap the batch size to avoid an unbounded loop eating
-    # all available memory on small instances (Render free tier = 512MB).
     if not isinstance(provider_services, list):
         flash("Sync បរាជ័យ: Provider response មិនមែនជា list ទេ — ពិនិត្យ PROVIDER_API_URL", "danger")
         return redirect(url_for("admin.services"))
 
-    MAX_SERVICES = 5000
-    if len(provider_services) > MAX_SERVICES:
-        flash(f"Sync បរាជ័យ: Provider ត្រឡប់ {len(provider_services)} services លើសកំណត់ ({MAX_SERVICES}) — ពិនិត្យ PROVIDER_API_URL", "danger")
-        return redirect(url_for("admin.services"))
+    # Pre-fetch existing markup_percent + is_active ONLY (not full objects)
+    # so custom admin markups and active/inactive choices survive a re-sync.
+    # This is a small dict, not full Service rows.
+    existing_rows = db.session.query(
+        Service.provider_service_id, Service.markup_percent, Service.is_active
+    ).all()
+    existing_markups = {row[0]: row[1] for row in existing_rows}
+    existing_active = {row[0]: row[2] for row in existing_rows}
+    existing_ids = set(existing_markups.keys())
 
+    # Build rows in plain dicts (cheap) instead of ORM objects (expensive).
+    # Process + insert in chunks so we never hold the whole provider catalog
+    # plus SQLAlchemy identity-map overhead in memory at once — this is what
+    # caused the OOM kill on Render's 512MB free tier.
+    CHUNK_SIZE = 200
     created, updated, skipped = 0, 0, 0
+    batch = []
+
+    def flush_batch(rows):
+        if not rows:
+            return
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+        stmt = pg_insert(Service.__table__).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["provider_service_id"],
+            set_={
+                "name": stmt.excluded.name,
+                "category": stmt.excluded.category,
+                "provider_rate": stmt.excluded.provider_rate,
+                "rate": stmt.excluded.rate,
+                "min_order": stmt.excluded.min_order,
+                "max_order": stmt.excluded.max_order,
+                "service_type": stmt.excluded.service_type,
+                "updated_at": stmt.excluded.updated_at,
+            },
+        )
+        db.session.execute(stmt)
+        db.session.commit()
+
+    from datetime import datetime
+
     for ps in provider_services:
         if not isinstance(ps, dict) or "service" not in ps:
             skipped += 1
             continue
 
         pid = str(ps.get("service"))
-        existing = Service.query.filter_by(provider_service_id=pid).first()
-
         try:
             provider_rate = Decimal(str(ps.get("rate", "0")))
+            min_order = int(ps.get("min", 100))
+            max_order = int(ps.get("max", 10000))
         except Exception:
             skipped += 1
             continue
 
-        rate = pricing.calc_rate(provider_rate, existing.markup_percent if existing else None)
+        markup = existing_markups.get(pid)
+        rate = pricing.calc_rate(provider_rate, markup)
 
-        if existing:
-            existing.name = ps.get("name", existing.name)
-            existing.category = ps.get("category", existing.category)
-            existing.provider_rate = provider_rate
-            existing.rate = rate
-            existing.min_order = int(ps.get("min", existing.min_order))
-            existing.max_order = int(ps.get("max", existing.max_order))
-            existing.service_type = ps.get("type", existing.service_type)
+        if pid in existing_ids:
             updated += 1
         else:
-            new_service = Service(
-                provider_service_id=pid,
-                name=ps.get("name", "Unnamed"),
-                category=ps.get("category", "Other"),
-                provider_rate=provider_rate,
-                rate=rate,
-                min_order=int(ps.get("min", 100)),
-                max_order=int(ps.get("max", 10000)),
-                service_type=ps.get("type", "Default"),
-                is_active=False,  # admin must opt-in before showing to users
-            )
-            db.session.add(new_service)
             created += 1
+
+        batch.append({
+            "provider_service_id": pid,
+            "name": str(ps.get("name", "Unnamed"))[:255],
+            "category": str(ps.get("category", "Other"))[:120],
+            "provider_rate": provider_rate,
+            "rate": rate,
+            "min_order": min_order,
+            "max_order": max_order,
+            "service_type": str(ps.get("type", "Default"))[:64],
+            "is_active": existing_active.get(pid, False),  # keep prior active state; new services start inactive
+            "updated_at": datetime.utcnow(),
+        })
+
+        if len(batch) >= CHUNK_SIZE:
+            flush_batch(batch)
+            batch = []
+
+    flush_batch(batch)  # flush remainder
 
     _log("sync_services", f"created={created} updated={updated} skipped={skipped}")
     db.session.commit()
