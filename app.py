@@ -35,6 +35,24 @@ def create_app(config_class=Config):
 
     register_cli(app)
 
+    # Auto-create tables + bootstrap admin on startup.
+    # Needed because Render's free tier has no Shell access to run
+    # `flask init-db` / `flask create-admin` manually.
+    with app.app_context():
+        db.create_all()
+
+        admin_username = app.config["ADMIN_USERNAME"]
+        if not User.query.filter_by(username=admin_username).first():
+            admin = User(
+                username=admin_username,
+                email=app.config["ADMIN_EMAIL"],
+                is_admin=True,
+            )
+            admin.set_password(app.config["ADMIN_PASSWORD"])
+            admin.ensure_api_key()
+            db.session.add(admin)
+            db.session.commit()
+
     return app
 
 
