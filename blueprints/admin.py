@@ -106,12 +106,35 @@ def sync_services():
         flash(f"Sync បរាជ័យ: {e}", "danger")
         return redirect(url_for("admin.services"))
 
-    created, updated = 0, 0
+    # Safety guard: a misconfigured PROVIDER_API_URL (e.g. still pointing at
+    # a placeholder domain) can return non-SMM-API JSON that technically
+    # parses as a list/dict but isn't real service data. Validate shape
+    # strictly and cap the batch size to avoid an unbounded loop eating
+    # all available memory on small instances (Render free tier = 512MB).
+    if not isinstance(provider_services, list):
+        flash("Sync បរាជ័យ: Provider response មិនមែនជា list ទេ — ពិនិត្យ PROVIDER_API_URL", "danger")
+        return redirect(url_for("admin.services"))
+
+    MAX_SERVICES = 5000
+    if len(provider_services) > MAX_SERVICES:
+        flash(f"Sync បរាជ័យ: Provider ត្រឡប់ {len(provider_services)} services លើសកំណត់ ({MAX_SERVICES}) — ពិនិត្យ PROVIDER_API_URL", "danger")
+        return redirect(url_for("admin.services"))
+
+    created, updated, skipped = 0, 0, 0
     for ps in provider_services:
+        if not isinstance(ps, dict) or "service" not in ps:
+            skipped += 1
+            continue
+
         pid = str(ps.get("service"))
         existing = Service.query.filter_by(provider_service_id=pid).first()
 
-        provider_rate = Decimal(str(ps.get("rate", "0")))
+        try:
+            provider_rate = Decimal(str(ps.get("rate", "0")))
+        except Exception:
+            skipped += 1
+            continue
+
         rate = pricing.calc_rate(provider_rate, existing.markup_percent if existing else None)
 
         if existing:
@@ -138,9 +161,9 @@ def sync_services():
             db.session.add(new_service)
             created += 1
 
-    _log("sync_services", f"created={created} updated={updated}")
+    _log("sync_services", f"created={created} updated={updated} skipped={skipped}")
     db.session.commit()
-    flash(f"Sync ជោគជ័យ: {created} service ថ្មី, {updated} service ត្រូវបាន update", "success")
+    flash(f"Sync ជោគជ័យ: {created} service ថ្មី, {updated} service ត្រូវបាន update, {skipped} skip", "success")
     return redirect(url_for("admin.services"))
 
 
