@@ -94,7 +94,8 @@ def toggle_active(user_id):
 @admin_required
 def services():
     all_services = Service.query.order_by(Service.category.asc(), Service.name.asc()).all()
-    return render_template("admin/services.html", services=all_services)
+    categories = sorted({s.category for s in all_services})
+    return render_template("admin/services.html", services=all_services, categories=categories)
 
 
 @bp.route("/services/sync", methods=["POST"])
@@ -233,6 +234,37 @@ def update_service(service_id):
     _log("update_service", f"service={service.id} markup={service.markup_percent} active={is_active}")
     db.session.commit()
     flash(f"Service '{service.name}' ត្រូវបាន update", "success")
+    return redirect(url_for("admin.services"))
+
+
+@bp.route("/services/bulk-markup", methods=["POST"])
+@admin_required
+def bulk_update_markup():
+    service_ids = request.form.getlist("service_ids")
+    markup_raw = request.form.get("bulk_markup_percent", "").strip()
+
+    if not service_ids:
+        flash("សូមជ្រើស service យ៉ាងតិច១ មុននឹង Apply", "danger")
+        return redirect(url_for("admin.services"))
+
+    try:
+        markup = Decimal(markup_raw) if markup_raw else None
+    except Exception:
+        flash("Markup percent មិនត្រឹមត្រូវ", "danger")
+        return redirect(url_for("admin.services"))
+
+    services = Service.query.filter(Service.id.in_(service_ids)).all()
+    updated = 0
+    for s in services:
+        s.markup_percent = markup
+        s.rate = pricing.calc_rate(s.provider_rate, markup)
+        updated += 1
+
+    _log("bulk_update_markup", f"count={updated} markup={markup}")
+    db.session.commit()
+
+    markup_display = f"{markup}%" if markup is not None else "default"
+    flash(f"Markup {markup_display} ត្រូវបានកំណត់លើ {updated} service", "success")
     return redirect(url_for("admin.services"))
 
 

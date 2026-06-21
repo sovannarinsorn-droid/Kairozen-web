@@ -1,48 +1,161 @@
 {% extends "base.html" %}
 {% block title %}Services — Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+  .cat-filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .cat-tag {
+    font-size: 12.5px; padding: 7px 14px; border-radius: 100px;
+    background: #fff; border: 1px solid var(--cream-dim); color: var(--text-on-cream);
+    cursor: pointer; user-select: none; transition: all 0.15s;
+  }
+  .cat-tag:hover { border-color: var(--coral); }
+  .cat-tag.active { background: var(--ink); color: var(--text-on-ink); border-color: var(--ink); }
+
+  .bulk-bar {
+    position: sticky; top: 70px; z-index: 20;
+    background: var(--ink); color: var(--text-on-ink);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    display: none;
+    align-items: center; gap: 14px; flex-wrap: wrap;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-soft);
+  }
+  .bulk-bar.show { display: flex; }
+  .bulk-bar .count-badge {
+    background: var(--coral); color: #fff; font-weight: 700;
+    font-size: 12.5px; padding: 4px 10px; border-radius: 100px;
+  }
+  .bulk-bar input[type="number"] {
+    width: 90px; padding: 8px 10px; border-radius: 8px; border: none;
+    font-family: var(--font-mono); font-size: 13.5px;
+  }
+  .bulk-bar .bulk-label { font-size: 13px; color: var(--text-on-ink-dim); }
+
+  .row-checkbox, #selectAllChk { width: 17px; height: 17px; cursor: pointer; }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div class="section-head" style="margin-top:32px;">
   <h2>Services</h2>
   <form method="POST" action="{{ url_for('admin.sync_services') }}">
-    <button type="submit" class="btn btn-primary btn-sm">🔄 Sync ពី khmer-smm.com</button>
+    <button type="submit" class="btn btn-primary btn-sm">🔄 Sync ពី Provider</button>
   </form>
 </div>
 
-<p class="muted small" style="margin-bottom:20px;">
-  Service ថ្មីដែល sync មកនឹង inactive ដោយស្វ័យប្រវត្តិ។ កំណត់ markup ហើយ tick "Active" ដើម្បីបង្ហាញដល់ user។
+<p class="muted small" style="margin-bottom:16px;">
+  Service ថ្មីដែល sync មកនឹង inactive ដោយស្វ័យប្រវត្តិ។ ជ្រើស category ខាងក្រោម ដើម្បី auto-select service ក្នុង category នោះ ឬ tick checkbox ដោយដៃ រួចកំណត់ markup % តែម្តងសម្រាប់ទាំងអស់។
 </p>
 
-<div class="table-wrap">
-  <table class="data-table">
-    <thead>
-      <tr><th>ID</th><th>Name</th><th>Category</th><th>Provider Rate</th><th>Sell Rate</th><th>Min/Max</th><th>Markup %</th><th>Active</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for s in services %}
-      <tr>
-        <td class="mono">{{ s.id }}</td>
-        <td>{{ s.name }}</td>
-        <td>{{ s.category }}</td>
-        <td class="mono">${{ "%.4f"|format(s.provider_rate) }}</td>
-        <td class="mono">${{ "%.4f"|format(s.rate) }}</td>
-        <td class="small">{{ s.min_order }} / {{ s.max_order }}</td>
-        <td>
-          <input type="number" step="0.01" name="markup_percent" form="svcform-{{ s.id }}"
-                 value="{{ s.markup_percent if s.markup_percent is not none else '' }}"
-                 placeholder="default" class="form-control" style="width:90px; padding:6px 8px; font-size:12.5px;">
-        </td>
-        <td>
-          <input type="checkbox" name="is_active" form="svcform-{{ s.id }}" {{ 'checked' if s.is_active else '' }}>
-        </td>
-        <td>
-          <form id="svcform-{{ s.id }}" method="POST" action="{{ url_for('admin.update_service', service_id=s.id) }}"></form>
-          <button type="submit" form="svcform-{{ s.id }}" class="btn btn-sm btn-outline">Save</button>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="cat-filter-bar" id="catFilterBar">
+  {% for cat in categories %}
+  <span class="cat-tag" data-category="{{ cat }}">{{ cat }}</span>
+  {% endfor %}
 </div>
 
+<form id="bulkForm" method="POST" action="{{ url_for('admin.bulk_update_markup') }}">
+  <div class="bulk-bar" id="bulkBar">
+    <span class="count-badge" id="selCount">0 selected</span>
+    <span class="bulk-label">កំណត់ Markup %:</span>
+    <input type="number" step="0.01" name="bulk_markup_percent" placeholder="ឧ. 30">
+    <button type="submit" class="btn btn-lime btn-sm">Apply ទៅគ្រប់ Service ដែល Select</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAllChk"></th>
+          <th>ID</th><th>Name</th><th>Category</th><th>Provider Rate</th><th>Sell Rate</th><th>Min/Max</th><th>Markup %</th><th>Active</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in services %}
+        <tr data-category="{{ s.category }}">
+          <td><input type="checkbox" class="row-checkbox" name="service_ids" value="{{ s.id }}"></td>
+          <td class="mono">{{ s.id }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.category }}</td>
+          <td class="mono">${{ "%.4f"|format(s.provider_rate) }}</td>
+          <td class="mono">${{ "%.4f"|format(s.rate) }}</td>
+          <td class="small">{{ s.min_order }} / {{ s.max_order }}</td>
+          <td>
+            <input type="number" step="0.01" name="markup_percent" form="svcform-{{ s.id }}"
+                   value="{{ s.markup_percent if s.markup_percent is not none else '' }}"
+                   placeholder="default" class="form-control" style="width:90px; padding:6px 8px; font-size:12.5px;">
+          </td>
+          <td>
+            <input type="checkbox" name="is_active" form="svcform-{{ s.id }}" {{ 'checked' if s.is_active else '' }}>
+          </td>
+          <td>
+            <form id="svcform-{{ s.id }}" method="POST" action="{{ url_for('admin.update_service', service_id=s.id) }}"></form>
+            <button type="submit" form="svcform-{{ s.id }}" class="btn btn-sm btn-outline">Save</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  const selectAllChk = document.getElementById('selectAllChk');
+  const rowChecks = () => Array.from(document.querySelectorAll('.row-checkbox'));
+  const bulkBar = document.getElementById('bulkBar');
+  const selCount = document.getElementById('selCount');
+  const catTags = document.querySelectorAll('.cat-tag');
+
+  function updateBulkBar() {
+    const checked = rowChecks().filter(c => c.checked);
+    selCount.textContent = checked.length + ' selected';
+    bulkBar.classList.toggle('show', checked.length > 0);
+  }
+
+  selectAllChk.addEventListener('change', () => {
+    rowChecks().forEach(c => {
+      // Only affect currently-visible rows (respects category filter)
+      const row = c.closest('tr');
+      if (row.style.display !== 'none') c.checked = selectAllChk.checked;
+    });
+    updateBulkBar();
+  });
+
+  rowChecks().forEach(c => c.addEventListener('change', updateBulkBar));
+
+  catTags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      const isActive = tag.classList.contains('active');
+      catTags.forEach(t => t.classList.remove('active'));
+
+      const rows = document.querySelectorAll('#bulkForm tbody tr');
+
+      if (isActive) {
+        // Toggled off -> show all rows, clear selection
+        rows.forEach(r => { r.style.display = ''; });
+        rowChecks().forEach(c => c.checked = false);
+      } else {
+        tag.classList.add('active');
+        const cat = tag.dataset.category;
+        rows.forEach(r => {
+          const match = r.dataset.category === cat;
+          r.style.display = match ? '' : 'none';
+        });
+        // Auto-select all services in this category
+        rowChecks().forEach(c => {
+          const row = c.closest('tr');
+          c.checked = row.dataset.category === cat;
+        });
+      }
+      updateBulkBar();
+    });
+  });
+})();
+</script>
 {% endblock %}
