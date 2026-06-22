@@ -240,11 +240,17 @@ def update_service(service_id):
 @bp.route("/services/bulk-markup", methods=["POST"])
 @admin_required
 def bulk_update_markup():
-    service_ids = request.form.getlist("service_ids")
+    raw_ids = request.form.getlist("service_ids")
     markup_raw = request.form.get("bulk_markup_percent", "").strip()
 
-    if not service_ids:
+    if not raw_ids:
         flash("សូមជ្រើស service យ៉ាងតិច១ មុននឹង Apply", "danger")
+        return redirect(url_for("admin.services"))
+
+    try:
+        service_ids = [int(i) for i in raw_ids]
+    except (ValueError, TypeError):
+        flash("Service ID មិនត្រឹមត្រូវ", "danger")
         return redirect(url_for("admin.services"))
 
     try:
@@ -253,18 +259,26 @@ def bulk_update_markup():
         flash("Markup percent មិនត្រឹមត្រូវ", "danger")
         return redirect(url_for("admin.services"))
 
-    services = Service.query.filter(Service.id.in_(service_ids)).all()
-    updated = 0
-    for s in services:
-        s.markup_percent = markup
-        s.rate = pricing.calc_rate(s.provider_rate, markup)
-        updated += 1
+    try:
+        services = Service.query.filter(Service.id.in_(service_ids)).all()
+        updated = 0
+        for s in services:
+            s.markup_percent = markup
+            s.rate = pricing.calc_rate(s.provider_rate, markup)
+            updated += 1
 
-    _log("bulk_update_markup", f"count={updated} markup={markup}")
-    db.session.commit()
+        log_detail = "count=" + str(updated) + " markup=" + (str(markup) if markup is not None else "default")
+        db.session.add(AdminLog(admin_id=current_user.id, action="bulk_update_markup", details=log_detail))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash("Bulk update បរាជ័យ — សូមសាកល្បងម្តងទៀត", "danger")
+        return redirect(url_for("admin.services"))
 
-    markup_display = f"{markup}%" if markup is not None else "default"
-    flash(f"Markup {markup_display} ត្រូវបានកំណត់លើ {updated} service", "success")
+    if markup is not None:
+        flash("Markup " + str(markup) + "% ត្រូវបានកំណត់លើ " + str(updated) + " service", "success")
+    else:
+        flash("Markup default ត្រូវបានកំណត់លើ " + str(updated) + " service", "success")
     return redirect(url_for("admin.services"))
 
 
